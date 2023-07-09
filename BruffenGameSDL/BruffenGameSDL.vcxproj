@@ -144,7 +144,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="source\main.c" />
+    <ClCompile Include="source\bruffengame.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="source\bruffengame.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
