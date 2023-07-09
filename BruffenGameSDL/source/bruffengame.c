@@ -23,45 +23,68 @@ int checkCollision(SDL_Rect a, SDL_Rect b) {
 }
 
 void resetVinc(int index) {
+    float speedIncrement = ((float)score / SCORE_SPEED_FACTOR);
+    speedIncrement = speedIncrement > 1.0 ? 1.0 : speedIncrement;
+
+    int speedX = (rand() % VINC_SPEED + 1);
+    int speedY = (rand() % VINC_SPEED + 1);
+
+    int directionX = 0, directionY = 0;
     int side = rand() % 4;
-    int directionX = 0;
-    int directionY = 0;
+    int diagonalChance = rand() % 5;
+
+    switch (side) {
+    case 0: // left side
+        directionX = 1;
+        directionY = diagonalChance == 0 ? (rand() % 2 == 0 ? -1 : 1) : 0;
+        break;
+    case 1: // right side
+        directionX = -1;
+        directionY = diagonalChance == 0 ? (rand() % 2 == 0 ? -1 : 1) : 0;
+        break;
+    case 2: // top side
+        directionY = 1;
+        directionX = diagonalChance == 0 ? (rand() % 2 == 0 ? -1 : 1) : 0;
+        break;
+    case 3: // bottom side
+        directionY = -1;
+        directionX = diagonalChance == 0 ? (rand() % 2 == 0 ? -1 : 1) : 0;
+        break;
+    }
+
+    int speedIncrementX = (int)(speedX * speedIncrement);
+    int speedIncrementY = (int)(speedY * speedIncrement);
+
+    int finalSpeedX = directionX * (speedX + (speedIncrementX < VINC_MIN_SPEED ? VINC_MIN_SPEED : speedIncrementX));
+    int finalSpeedY = directionY * (speedY + (speedIncrementY < VINC_MIN_SPEED ? VINC_MIN_SPEED : speedIncrementY));
+
+    vincSpeedX[index] = finalSpeedX;
+    vincSpeedY[index] = finalSpeedY;
+
     switch (side) {
     case 0: // left side
         vincRect[index].x = -SCREEN_MARGIN;
         vincRect[index].y = rand() % SCREEN_HEIGHT;
-        directionX = 1;
         break;
     case 1: // right side
         vincRect[index].x = SCREEN_WIDTH;
         vincRect[index].y = rand() % SCREEN_HEIGHT;
-        directionX = -1;
         break;
     case 2: // top side
         vincRect[index].x = rand() % SCREEN_WIDTH;
         vincRect[index].y = -SCREEN_MARGIN;
-        directionY = 1;
         break;
     case 3: // bottom side
         vincRect[index].x = rand() % SCREEN_WIDTH;
         vincRect[index].y = SCREEN_HEIGHT;
-        directionY = -1;
         break;
     }
-
     vincRect[index].w = VINC_WIDTH;
     vincRect[index].h = VINC_HEIGHT;
-
-    int speedIncrement = VINC_SPEED_INCREMENT * score;
-    if (speedIncrement > VINC_MAX_SPEED) {
-        speedIncrement = VINC_MAX_SPEED;
-    }
-    vincSpeedX[index] = directionX * ((rand() % VINC_SPEED + 1) + speedIncrement);
-    vincSpeedY[index] = directionY * ((rand() % VINC_SPEED + 1) + speedIncrement);
 }
 
 void resetGame() {
-    hotboiRect = (SDL_Rect){ SCREEN_WIDTH / 2.0, SCREEN_HEIGHT / 2.0, HOTBOI_WIDTH, HOTBOI_HEIGHT };
+    hotboiRect = (SDL_Rect){ (SCREEN_WIDTH - HOTBOI_WIDTH) / 2, (SCREEN_HEIGHT - HOTBOI_HEIGHT) / 2, HOTBOI_WIDTH, HOTBOI_HEIGHT };
     score = 0;
     currentVincCount = STARTING_VINC_COUNT;
     for (int i = 0; i < currentVincCount; i++) {
@@ -73,7 +96,6 @@ void moveVincs() {
     for (int i = 0; i < currentVincCount; i++) {
         vincRect[i].x += vincSpeedX[i];
         vincRect[i].y += vincSpeedY[i];
-
         if (vincRect[i].x < -vincRect[i].w || vincRect[i].x > SCREEN_WIDTH || vincRect[i].y < -vincRect[i].h || vincRect[i].y > SCREEN_HEIGHT) {
             resetVinc(i);
         }
@@ -82,16 +104,14 @@ void moveVincs() {
 
 SDL_Texture* renderText(const char* message, SDL_Color color, TTF_Font* font) {
     SDL_Surface* surface = TTF_RenderText_Solid(font, message, color);
-    if (surface == NULL) {
+    if (!surface) {
         SDL_Log("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
         return NULL;
     }
-
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-    if (texture == NULL) {
+    if (!texture) {
         SDL_Log("Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
     }
-
     SDL_FreeSurface(surface);
     return texture;
 }
@@ -123,7 +143,7 @@ int main(int argc, char* args[]) {
     Mix_Chunk* gameOverSound = Mix_LoadWAV("wowzer.wav");
 
     int prevScore = -1;
-    SDL_Color white = { 255, 255, 102 };
+    SDL_Color yellow = { 255, 255, 102 };
     SDL_Rect textRect = { 10, 10, SCORE_TEXT_WIDTH, SCORE_TEXT_HEIGHT };
     int lastScoreIncrease = 0;
 
@@ -198,11 +218,13 @@ int main(int argc, char* args[]) {
         if (!isGameOver) {
             score = (SDL_GetTicks() - startTime) / 1000;
 
-            if (score != lastScoreIncrease && currentVincCount < MAX_VINC_COUNT) {
-                if (score <= MAX_VINC_SECONDS_AMOUNT && score % ADD_VINCS_SECONDS_AMOUNT == 0) {
+            if (score != lastScoreIncrease) {
+                if (score % ADD_VINCS_SECONDS_AMOUNT == 0) {
                     lastScoreIncrease = score;
-                    resetVinc(currentVincCount);
-                    currentVincCount++;
+                    if (currentVincCount < MAX_VINC_COUNT) {
+                        resetVinc(currentVincCount);
+                        currentVincCount++;
+                    }
                 }
             }
 
@@ -234,19 +256,19 @@ int main(int argc, char* args[]) {
             }
         }
 
-
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, background, NULL, NULL);
 
         if (!isGameOver) {
             score = (SDL_GetTicks() - startTime) / 1000;
             char scoreStr[50];
-            sprintf_s(scoreStr, 50, "Score: %d", score); // specify buffer size in sprintf_s
             if (font == NULL) {
                 SDL_Log("Failed to load font! SDL_ttf Error: %s\n", TTF_GetError());
                 return 1; // or handle error appropriately
             }
-            SDL_Texture* scoreTexture = renderText(scoreStr, white, font);
+
+            sprintf_s(scoreStr, 50, "Score: %d", score); // specify buffer size in sprintf_s
+            SDL_Texture* scoreTexture = renderText(scoreStr, yellow, font);
             if (scoreTexture == NULL) {
                 SDL_Log("Failed to render text! SDL Error: %s\n", SDL_GetError());
                 // handle error appropriately
