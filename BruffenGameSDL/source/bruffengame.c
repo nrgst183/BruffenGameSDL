@@ -22,45 +22,29 @@ int checkCollision(SDL_Rect a, SDL_Rect b) {
     return !(a.x + a.w <= b.x || a.x >= b.x + b.w || a.y + a.h <= b.y || a.y >= b.y + b.h);
 }
 
-void resetVinc(int index) {
-    float speedIncrement = ((float)score / SCORE_SPEED_FACTOR);
-    speedIncrement = speedIncrement > 1.0 ? 1.0 : speedIncrement;
-
-    int speedX = (rand() % VINC_SPEED + 1);
-    int speedY = (rand() % VINC_SPEED + 1);
-
-    int directionX = 0, directionY = 0;
-    int side = rand() % 4;
-    int diagonalChance = rand() % 5;
-
+// This function sets the direction based on the side
+void setDirection(int* directionX, int* directionY, int side, int diagonalChance) {
     switch (side) {
     case 0: // left side
-        directionX = 1;
-        directionY = diagonalChance == 0 ? (rand() % 2 == 0 ? -1 : 1) : 0;
+        *directionX = 1;
+        *directionY = diagonalChance == 0 ? (rand() % 2 == 0 ? -1 : 1) : 0;
         break;
     case 1: // right side
-        directionX = -1;
-        directionY = diagonalChance == 0 ? (rand() % 2 == 0 ? -1 : 1) : 0;
+        *directionX = -1;
+        *directionY = diagonalChance == 0 ? (rand() % 2 == 0 ? -1 : 1) : 0;
         break;
     case 2: // top side
-        directionY = 1;
-        directionX = diagonalChance == 0 ? (rand() % 2 == 0 ? -1 : 1) : 0;
+        *directionY = 1;
+        *directionX = diagonalChance == 0 ? (rand() % 2 == 0 ? -1 : 1) : 0;
         break;
     case 3: // bottom side
-        directionY = -1;
-        directionX = diagonalChance == 0 ? (rand() % 2 == 0 ? -1 : 1) : 0;
+        *directionY = -1;
+        *directionX = diagonalChance == 0 ? (rand() % 2 == 0 ? -1 : 1) : 0;
         break;
     }
+}
 
-    int speedIncrementX = (int)(speedX * speedIncrement);
-    int speedIncrementY = (int)(speedY * speedIncrement);
-
-    int finalSpeedX = directionX * (speedX + (speedIncrementX < VINC_MIN_SPEED ? VINC_MIN_SPEED : speedIncrementX));
-    int finalSpeedY = directionY * (speedY + (speedIncrementY < VINC_MIN_SPEED ? VINC_MIN_SPEED : speedIncrementY));
-
-    vincSpeedX[index] = finalSpeedX;
-    vincSpeedY[index] = finalSpeedY;
-
+void setVincPosition(int index, int side) {
     switch (side) {
     case 0: // left side
         vincRect[index].x = -SCREEN_MARGIN;
@@ -81,6 +65,31 @@ void resetVinc(int index) {
     }
     vincRect[index].w = VINC_WIDTH;
     vincRect[index].h = VINC_HEIGHT;
+}
+
+void resetVinc(int index) {
+    float speedIncrement = ((float)score / SCORE_SPEED_FACTOR);
+    speedIncrement = speedIncrement > 1.0 ? 1.0 : speedIncrement;
+
+    int speedX = (rand() % VINC_SPEED + 1);
+    int speedY = (rand() % VINC_SPEED + 1);
+
+    int directionX = 0, directionY = 0;
+    int side = rand() % 4;
+    int diagonalChance = rand() % 5;
+
+    setDirection(&directionX, &directionY, side, diagonalChance);
+
+    int speedIncrementX = (int)(speedX * speedIncrement);
+    int speedIncrementY = (int)(speedY * speedIncrement);
+
+    int finalSpeedX = directionX * (speedX + (speedIncrementX < VINC_MIN_SPEED ? VINC_MIN_SPEED : speedIncrementX));
+    int finalSpeedY = directionY * (speedY + (speedIncrementY < VINC_MIN_SPEED ? VINC_MIN_SPEED : speedIncrementY));
+
+    vincSpeedX[index] = finalSpeedX;
+    vincSpeedY[index] = finalSpeedY;
+
+    setVincPosition(index, side);
 }
 
 void resetGame() {
