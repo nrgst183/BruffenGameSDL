@@ -24,42 +24,53 @@ int checkCollision(SDL_Rect a, SDL_Rect b) {
 
 void resetVinc(int index) {
     int side = rand() % 4;
+    int directionX = 0;
+    int directionY = 0;
     switch (side) {
     case 0: // left side
         vincRect[index].x = -SCREEN_MARGIN;
         vincRect[index].y = rand() % SCREEN_HEIGHT;
+        directionX = 1;
         break;
     case 1: // right side
         vincRect[index].x = SCREEN_WIDTH;
         vincRect[index].y = rand() % SCREEN_HEIGHT;
+        directionX = -1;
         break;
     case 2: // top side
         vincRect[index].x = rand() % SCREEN_WIDTH;
         vincRect[index].y = -SCREEN_MARGIN;
+        directionY = 1;
         break;
     case 3: // bottom side
         vincRect[index].x = rand() % SCREEN_WIDTH;
         vincRect[index].y = SCREEN_HEIGHT;
+        directionY = -1;
         break;
     }
 
     vincRect[index].w = VINC_WIDTH;
     vincRect[index].h = VINC_HEIGHT;
 
-    vincSpeedX[index] = (rand() % (2 * VINC_SPEED + 1)) - VINC_SPEED;
-    vincSpeedY[index] = (rand() % (2 * VINC_SPEED + 1)) - VINC_SPEED;
+    int speedIncrement = VINC_SPEED_INCREMENT * score;
+    if (speedIncrement > VINC_MAX_SPEED) {
+        speedIncrement = VINC_MAX_SPEED;
+    }
+    vincSpeedX[index] = directionX * ((rand() % VINC_SPEED + 1) + speedIncrement);
+    vincSpeedY[index] = directionY * ((rand() % VINC_SPEED + 1) + speedIncrement);
 }
 
 void resetGame() {
-    hotboiRect = (SDL_Rect){ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, HOTBOI_WIDTH, HOTBOI_HEIGHT };
-
-    for (int i = 0; i < VINC_COUNT; i++) {
+    hotboiRect = (SDL_Rect){ SCREEN_WIDTH / 2.0, SCREEN_HEIGHT / 2.0, HOTBOI_WIDTH, HOTBOI_HEIGHT };
+    score = 0;
+    currentVincCount = STARTING_VINC_COUNT;
+    for (int i = 0; i < currentVincCount; i++) {
         resetVinc(i);
     }
 }
 
 void moveVincs() {
-    for (int i = 0; i < VINC_COUNT; i++) {
+    for (int i = 0; i < currentVincCount; i++) {
         vincRect[i].x += vincSpeedX[i];
         vincRect[i].y += vincSpeedY[i];
 
@@ -69,9 +80,36 @@ void moveVincs() {
     }
 }
 
+SDL_Texture* renderText(const char* message, SDL_Color color, TTF_Font* font) {
+    SDL_Surface* surface = TTF_RenderText_Solid(font, message, color);
+    if (surface == NULL) {
+        SDL_Log("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
+        return NULL;
+    }
+
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    if (texture == NULL) {
+        SDL_Log("Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
+    }
+
+    SDL_FreeSurface(surface);
+    return texture;
+}
+
 int main(int argc, char* args[]) {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) { // Added SDL_INIT_AUDIO
         SDL_Log("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    // if no sound, we don't care, just ignore
+    if (TTF_Init() == -1 || Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        SDL_Log("SDL_ttf or SDL_mixer could not initialize! SDL_ttf Error: %s, SDL_mixer Error: %s\n", TTF_GetError(), Mix_GetError());
+    }
+
+    TTF_Font* font = TTF_OpenFont("arial.ttf", FONT_SIZE);
+    if (font == NULL) {
+        SDL_Log("Failed to load font! SDL_ttf Error: %s\n", TTF_GetError());
         return 1;
     }
 
@@ -82,6 +120,12 @@ int main(int argc, char* args[]) {
     hotboi = loadTexture("HotBoi.bmp");
     vincTexture = loadTexture("vinc.bmp");
     endScreen = loadTexture("EndScreen.bmp");
+    Mix_Chunk* gameOverSound = Mix_LoadWAV("wowzer.wav");
+
+    int prevScore = -1;
+    SDL_Color white = { 255, 255, 102 };
+    SDL_Rect textRect = { 10, 10, SCORE_TEXT_WIDTH, SCORE_TEXT_HEIGHT };
+    int lastScoreIncrease = 0;
 
     if (!background || !hotboi || !vincTexture || !endScreen) {
         SDL_Log("Failed to load textures\n");
@@ -95,7 +139,7 @@ int main(int argc, char* args[]) {
     int hotboiSpeedY = 0;
 
     Uint32 startTime = SDL_GetTicks();
-    int score = 0;
+    score = 0;
     bool isGameOver = false;
 
     SDL_Event e;
@@ -154,6 +198,14 @@ int main(int argc, char* args[]) {
         if (!isGameOver) {
             score = (SDL_GetTicks() - startTime) / 1000;
 
+            if (score != lastScoreIncrease && currentVincCount < MAX_VINC_COUNT) {
+                if (score <= MAX_VINC_SECONDS_AMOUNT && score % ADD_VINCS_SECONDS_AMOUNT == 0) {
+                    lastScoreIncrease = score;
+                    resetVinc(currentVincCount);
+                    currentVincCount++;
+                }
+            }
+
             hotboiRect.x += hotboiSpeedX;
             hotboiRect.y += hotboiSpeedY;
 
@@ -173,33 +225,54 @@ int main(int argc, char* args[]) {
 
             moveVincs();
 
-            for (int i = 0; i < VINC_COUNT; i++) {
+            for (int i = 0; i < currentVincCount; i++) {
                 if (checkCollision(hotboiRect, vincRect[i])) {
                     isGameOver = true;
+                    Mix_PlayChannel(-1, gameOverSound, 0);
                     break;
                 }
             }
         }
 
+
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, background, NULL, NULL);
 
         if (!isGameOver) {
+            score = (SDL_GetTicks() - startTime) / 1000;
+            char scoreStr[50];
+            sprintf_s(scoreStr, 50, "Score: %d", score); // specify buffer size in sprintf_s
+            if (font == NULL) {
+                SDL_Log("Failed to load font! SDL_ttf Error: %s\n", TTF_GetError());
+                return 1; // or handle error appropriately
+            }
+            SDL_Texture* scoreTexture = renderText(scoreStr, white, font);
+            if (scoreTexture == NULL) {
+                SDL_Log("Failed to render text! SDL Error: %s\n", SDL_GetError());
+                // handle error appropriately
+            }
+
+            // Render the hotboi
             SDL_RenderCopy(renderer, hotboi, NULL, &hotboiRect);
 
-            for (int i = 0; i < VINC_COUNT; i++) {
+            // Render all the vincs
+            for (int i = 0; i < currentVincCount; i++) {
                 SDL_RenderCopy(renderer, vincTexture, NULL, &vincRect[i]);
             }
 
-            // Uncomment this when renderText function is implemented
-            // renderText(score, 10, 10, renderer);
+            // Render the score text
+            SDL_RenderCopy(renderer, scoreTexture, NULL, &textRect);
+
+            // Remember to destroy the score texture after rendering it.
+            SDL_DestroyTexture(scoreTexture);
+
         }
-        else {
+        else
+        {
             SDL_RenderCopy(renderer, endScreen, NULL, NULL);
         }
 
         SDL_RenderPresent(renderer);
-
         SDL_Delay(20);
     }
 
@@ -209,6 +282,10 @@ int main(int argc, char* args[]) {
     SDL_DestroyTexture(endScreen);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    TTF_CloseFont(font);
+    Mix_FreeChunk(gameOverSound);
+    Mix_CloseAudio();
+    TTF_Quit();
     SDL_Quit();
 
     return 0;
