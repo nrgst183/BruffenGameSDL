@@ -23,7 +23,7 @@ int checkCollision(SDL_Rect a, SDL_Rect b) {
 }
 
 // This function sets the direction based on the side
-void setDirection(int* directionX, int* directionY, int side, int diagonalChance) {
+void setVincDirection(int* directionX, int* directionY, int side, int diagonalChance) {
     switch (side) {
     case 0: // left side
         *directionX = 1;
@@ -78,7 +78,7 @@ void resetVinc(int index) {
     int side = rand() % 4;
     int diagonalChance = rand() % 5;
 
-    setDirection(&directionX, &directionY, side, diagonalChance);
+    setVincDirection(&directionX, &directionY, side, diagonalChance);
 
     int speedIncrementX = (int)(speedX * speedIncrement);
     int speedIncrementY = (int)(speedY * speedIncrement);
