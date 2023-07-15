@@ -152,7 +152,7 @@ int main(int argc, char* args[]) {
     Mix_Chunk* gameOverSound = Mix_LoadWAV("wowzer.wav");
 
     int prevScore = -1;
-    SDL_Color yellow = { 255, 255, 102 };
+    SDL_Color white = { 255, 255, 255 };
     SDL_Rect textRect = { 10, 10, SCORE_TEXT_WIDTH, SCORE_TEXT_HEIGHT };
     int lastScoreIncrease = 0;
 
@@ -277,7 +277,7 @@ int main(int argc, char* args[]) {
             }
 
             sprintf_s(scoreStr, 50, "Score: %d", score); // specify buffer size in sprintf_s
-            SDL_Texture* scoreTexture = renderText(scoreStr, yellow, font);
+            SDL_Texture* scoreTexture = renderText(scoreStr, white, font);
             if (scoreTexture == NULL) {
                 SDL_Log("Failed to render text! SDL Error: %s\n", SDL_GetError());
                 // handle error appropriately

@@ -34,12 +34,12 @@
 #define FONT_SIZE 32
 #define SCORE_INCREMENT 10
 
-SDL_Window* window = NULL;
-SDL_Renderer* renderer = NULL;
-SDL_Texture* background = NULL;
-SDL_Texture* hotboi = NULL;
-SDL_Texture* vincTexture = NULL;
-SDL_Texture* endScreen = NULL;
+SDL_Window* window;
+SDL_Renderer* renderer;
+SDL_Texture* background;
+SDL_Texture* hotboi;
+SDL_Texture* vincTexture;
+SDL_Texture* endScreen;
 SDL_Rect hotboiRect;
 SDL_Rect vincRect[MAX_VINC_COUNT];
 int vincSpeedX[MAX_VINC_COUNT];
@@ -47,13 +47,13 @@ int vincSpeedY[MAX_VINC_COUNT];
 int currentVincCount;
 int score;
 Uint32 lastVincAdditionTime;
-Uint32 lastFrameTime = 0;
 
 SDL_Texture* loadTexture(const char* path);
-SDL_Texture* renderText(const char* message, SDL_Color color, TTF_Font* font);
 int calculateDistance(int x1, int y1, int x2, int y2);
 int checkCollision(SDL_Rect a, SDL_Rect b);
+void setVincDirection(int* directionX, int* directionY, int side, int diagonalChance);
+void setVincPosition(int index, int side);
 void resetVinc(int index);
 void resetGame();
 void moveVincs();
-int calculateDistance(int x1, int y1, int x2, int y2);
+SDL_Texture* renderText(const char* message, SDL_Color color, TTF_Font* font);
