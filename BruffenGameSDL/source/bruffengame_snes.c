@@ -128,12 +128,20 @@ void initGameObjects(u16 playerStartX, u16 playerStartY, u16 enemyStartX, u16 en
 int main(void) {
     // Initialize SNES console
     consoleInit();
-    
+    consoleInit();
+
     // Initialize text console with font
-    // ... (same as in the sample code) ...
+    // Note: You will need to provide the appropriate parameters based on your game
+    consoleSetTextVramBGAdr(0x2000);
+    consoleSetTextVramAdr(0x3000);
+    consoleSetTextOffset(0);
+    consoleInitText(0, 0, &snesfont);
 
     // Initialize layer with tiles
-    // ... (same as in the sample code) ...
+    // Note: You will need to ensure that bg_tiles, bg_map, and bg_palette are correctly set up with your background data
+    bgInitTileSet(1, &bg_tiles, &bg_palette, 0, (&bg_tiles_end - &bg_tiles), (&bg_palette_end - &bg_palette), BG_16COLORS, 0x4000);
+    bgInitMapSet(1, &bg_map, (&bg_map_end - &bg_map), SC_32x32, 0x0800);
+
 
     // Initialize sprite engine
     oamInitDynamicSprite(0x0000, 0x1000, 0, 0, OBJ_SIZE8_L16);
