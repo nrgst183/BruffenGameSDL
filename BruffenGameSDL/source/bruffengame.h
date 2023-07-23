@@ -20,9 +20,9 @@
 #define MAX_VINC_COUNT 20
 #define STARTING_VINC_COUNT 3
 #define ADD_VINCS_SECONDS_AMOUNT 5
-#define MAX_VINC_SECONDS_AMOUNT 60
+#define MAX_VINC_SECONDS_AMOUNT 120
 #define VINC_SPEED 5
-#define VINC_SPEED_INCREMENT 2
+#define VINC_SPEED_INCREMENT 1
 #define SCORE_SPEED_FACTOR 5
 #define VINC_MAX_SPEED 30
 #define VINC_MIN_SPEED 3
@@ -31,7 +31,7 @@
 #define SCORE_Y 10
 #define SCORE_TEXT_WIDTH 125
 #define SCORE_TEXT_HEIGHT 50
-#define FONT_SIZE 32
+#define FONT_SIZE 128
 #define SCORE_INCREMENT 10
 
 SDL_Window* window;
@@ -40,12 +40,19 @@ SDL_Texture* background;
 SDL_Texture* hotboi;
 SDL_Texture* vincTexture;
 SDL_Texture* endScreen;
+Mix_Chunk* gameOverSound;
 SDL_Rect hotboiRect;
 SDL_Rect vincRect[MAX_VINC_COUNT];
+TTF_Font* font;
 int vincSpeedX[MAX_VINC_COUNT];
 int vincSpeedY[MAX_VINC_COUNT];
 int currentVincCount;
 int score;
+int hotboiSpeedX;
+int hotboiSpeedY;
+bool isGameOver;
+Uint32 startTime;
+Uint32 lastScoreIncrease;
 Uint32 lastVincAdditionTime;
 
 SDL_Texture* loadTexture(const char* path);
