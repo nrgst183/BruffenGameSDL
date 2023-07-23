@@ -26,10 +26,10 @@ jobs:
 
     - name: Build with MSBuild
       run: |
-        msbuild BruffenGame.sln /p:Configuration=Release /p:Platform=x64 /p:VcpkgTriplet=x64-windows-static
+        msbuild BruffenGameSDL.sln /p:Configuration=Release /p:Platform=x64 /p:VcpkgTriplet=x64-windows-static
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
-        name: BruffenGame
-        path: BruffenGame.exe
+        name: BruffenGameSDL
+        path: BruffenGameSDL.exe
