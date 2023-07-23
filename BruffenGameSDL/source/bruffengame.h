@@ -10,21 +10,22 @@
 #include <time.h>
 #include <stdbool.h>
 
-#define SCREEN_WIDTH 1600
-#define SCREEN_HEIGHT 900
-#define HOTBOI_SPEED 10
+int SCREEN_WIDTH = 1920;
+int SCREEN_HEIGHT = 1080;
+
+#define HOTBOI_SPEED 500
 #define HOTBOI_WIDTH 112
 #define HOTBOI_HEIGHT 112
 #define VINC_WIDTH 157
 #define VINC_HEIGHT 149
-#define MAX_VINC_COUNT 25
+#define MAX_VINC_COUNT 100
 #define STARTING_VINC_COUNT 3
-#define ADD_VINCS_SECONDS_AMOUNT 10
-#define MAX_VINC_SECONDS_AMOUNT 120
-#define VINC_SPEED 3
-#define SCORE_SPEED_FACTOR 20
-#define VINC_MAX_SPEED 100
-#define VINC_MIN_SPEED 3
+#define ADD_VINCS_SECONDS_AMOUNT 15
+#define MAX_VINC_SECONDS_AMOUNT 380
+#define VINC_SPEED 250
+#define SCORE_SPEED_FACTOR 100
+#define VINC_MAX_SPEED 1000
+#define VINC_MIN_SPEED 300
 #define SCREEN_MARGIN 150
 #define SCORE_X 10
 #define SCORE_Y 10
@@ -58,6 +59,9 @@ bool isGameOver;
 Uint32 startTime;
 Uint32 lastScoreIncrease;
 Uint32 lastVincAdditionTime;
+float deltaTime;
+bool isInvulnerable = false;
+bool isScreensaverMode = false;
 
 SDL_Texture* loadTexture(const char* path);
 int calculateDistance(int x1, int y1, int x2, int y2);

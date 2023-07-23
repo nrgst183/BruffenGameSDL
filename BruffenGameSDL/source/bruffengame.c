@@ -77,7 +77,7 @@ void setVincPosition(int index, int side) {
 // Function to reset Vinc's position and speed
 void resetVinc(int index) {
     float speedIncrement = ((float)score / SCORE_SPEED_FACTOR);
-    speedIncrement = speedIncrement > 1.0 ? 1.0 : speedIncrement;
+    //speedIncrement = speedIncrement > 1.0 ? 1.0 : speedIncrement;
 
     int speedX = (rand() % VINC_SPEED + 1);
     int speedY = (rand() % VINC_SPEED + 1);
@@ -108,18 +108,17 @@ void resetGame() {
     hotboi = (Character){ (SCREEN_WIDTH - HOTBOI_WIDTH) / 2, (SCREEN_HEIGHT - HOTBOI_HEIGHT) / 2, HOTBOI_WIDTH, HOTBOI_HEIGHT, 0, 0, hotboi.texture };
     score = 0;
     currentVincCount = STARTING_VINC_COUNT;
-    for (int i = 0; i < currentVincCount; i++) {
+    for (int i = 0; i < MAX_VINC_COUNT; i++) {
         vincs[i].texture = vincTexture;
         resetVinc(i);
     }
 }
 
-
 // Function to move Vincs
 void moveVincs() {
     for (int i = 0; i < currentVincCount; i++) {
-        vincs[i].x += vincs[i].speedX;
-        vincs[i].y += vincs[i].speedY;
+        vincs[i].x += vincs[i].speedX * deltaTime;
+        vincs[i].y += vincs[i].speedY * deltaTime;
         if (vincs[i].x < -vincs[i].width || vincs[i].x > SCREEN_WIDTH || vincs[i].y < -vincs[i].height || vincs[i].y > SCREEN_HEIGHT) {
             resetVinc(i);
         }
@@ -160,7 +159,18 @@ void handleKeyboardInput(SDL_Event e, bool* quit, bool* isGameOver, Uint32* star
         case SDLK_RIGHT:
             hotboi.speedX = HOTBOI_SPEED;
             break;
+        case SDLK_i:
+            if (*isGameOver || isInvulnerable) {
+                isInvulnerable = !isInvulnerable;
+            }
+            break;
+        case SDLK_s:
+            if (*isGameOver || isScreensaverMode) {
+                isScreensaverMode = !isScreensaverMode;
+            }
+            break;
         }
+
     }
     else if (e.type == SDL_KEYUP) {
         switch (e.key.keysym.sym) {
@@ -210,8 +220,8 @@ void updateGameState(bool* isGameOver, Uint32* startTime, int* lastScoreIncrease
             }
         }
 
-        hotboi.x += hotboi.speedX;
-        hotboi.y += hotboi.speedY;
+        hotboi.x += hotboi.speedX * deltaTime;
+        hotboi.y += hotboi.speedY * deltaTime;
 
         if (hotboi.x < 0) {
             hotboi.x = 0;
@@ -230,7 +240,7 @@ void updateGameState(bool* isGameOver, Uint32* startTime, int* lastScoreIncrease
         moveVincs();
 
         for (int i = 0; i < currentVincCount; i++) {
-            if (checkCollision(hotboi, vincs[i])) {
+            if (!isInvulnerable && !isScreensaverMode && checkCollision(hotboi, vincs[i])) {
                 *isGameOver = true;
                 Mix_PlayChannel(-1, gameOverSound, 0);
                 break;
@@ -259,9 +269,11 @@ void renderGame(bool isGameOver, TTF_Font* font, SDL_Color white, SDL_Rect textR
             // handle error appropriately
         }
 
-        // Render the hotboi
-        SDL_Rect hotboiRect = { hotboi.x, hotboi.y, hotboi.width, hotboi.height };
-        SDL_RenderCopy(renderer, hotboi.texture, NULL, &hotboiRect);
+        if (!isScreensaverMode) {
+            // Render the hotboi
+            SDL_Rect hotboiRect = { hotboi.x, hotboi.y, hotboi.width, hotboi.height };
+            SDL_RenderCopy(renderer, hotboi.texture, NULL, &hotboiRect);
+        }
 
         // Render all the vincs
         for (int i = 0; i < currentVincCount; i++) {
@@ -331,13 +343,25 @@ int main(int argc, char* args[]) {
     SDL_Event e;
     bool quit = false;
 
+    // Main game loop
     while (!quit) {
+        Uint32 frameStart = SDL_GetTicks();
+
+        // Resize the window
+        int w, h;
+        SDL_GetWindowSize(window, &w, &h);
+        SCREEN_WIDTH = w;
+        SCREEN_HEIGHT = h;
+
         while (SDL_PollEvent(&e) != 0) {
             handleKeyboardInput(e, &quit, &isGameOver, &startTime);
         }
 
         updateGameState(&isGameOver, &startTime, &lastScoreIncrease);
         renderGame(isGameOver, font, white, textRect);
+
+        Uint32 frameEnd = SDL_GetTicks();
+        deltaTime = (frameEnd - frameStart) / 1000.0f; // duration of the last frame in seconds
     }
 
     SDL_DestroyTexture(background);
