@@ -1,0 +1,38 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Check out source code
+      uses: actions/checkout@v2
+
+    - name: Set up MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Install vcpkg
+      run: |
+        git clone https://github.com/microsoft/vcpkg
+        ./vcpkg/bootstrap-vcpkg.bat
+
+    - name: Install SDL2 with vcpkg
+      run: |
+        ./vcpkg/vcpkg install sdl2:x64-windows-static
+        ./vcpkg/vcpkg install sdl2-ttf:x64-windows-static
+        ./vcpkg/vcpkg install sdl2-mixer:x64-windows-static
+
+    - name: Build with CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static
+        cmake --build . --config Release
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: MySDL2Game
+        path: build/Release/*.exe
