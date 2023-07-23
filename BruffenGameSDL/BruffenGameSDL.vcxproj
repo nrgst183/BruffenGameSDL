@@ -123,7 +123,7 @@
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
-      <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
+      <EnableDpiAwareness>true</EnableDpiAwareness>
     </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

@@ -33,22 +33,27 @@
 #define FONT_SIZE 128
 #define SCORE_INCREMENT 10
 
+typedef struct {
+    int x;
+    int y;
+    int width;
+    int height;
+    int speedX;
+    int speedY;
+    SDL_Texture* texture;
+} Character;
+
 SDL_Window* window;
 SDL_Renderer* renderer;
 SDL_Texture* background;
-SDL_Texture* hotboi;
-SDL_Texture* vincTexture;
 SDL_Texture* endScreen;
+SDL_Texture* vincTexture;
 Mix_Chunk* gameOverSound;
-SDL_Rect hotboiRect;
-SDL_Rect vincRect[MAX_VINC_COUNT];
 TTF_Font* font;
-int vincSpeedX[MAX_VINC_COUNT];
-int vincSpeedY[MAX_VINC_COUNT];
+Character hotboi;
+Character vincs[MAX_VINC_COUNT];
 int currentVincCount;
 int score;
-int hotboiSpeedX;
-int hotboiSpeedY;
 bool isGameOver;
 Uint32 startTime;
 Uint32 lastScoreIncrease;

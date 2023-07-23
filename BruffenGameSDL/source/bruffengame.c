@@ -23,8 +23,8 @@ int calculateDistance(int x1, int y1, int x2, int y2) {
 }
 
 // Function to check if two rectangles collide
-int checkCollision(SDL_Rect a, SDL_Rect b) {
-    return !(a.x + a.w <= b.x || a.x >= b.x + b.w || a.y + a.h <= b.y || a.y >= b.y + b.h);
+int checkCollision(Character a, Character b) {
+    return !(a.x + a.width <= b.x || a.x >= b.x + b.width || a.y + a.height <= b.y || a.y >= b.y + b.height);
 }
 
 // Function to set the direction based on the side
@@ -51,26 +51,27 @@ void setVincDirection(int* directionX, int* directionY, int side, int diagonalCh
 
 // Function to set the position of Vinc
 void setVincPosition(int index, int side) {
+    // Change vincRect[index] to vincs[index]
     switch (side) {
     case 0: // left side
-        vincRect[index].x = -SCREEN_MARGIN;
-        vincRect[index].y = rand() % SCREEN_HEIGHT;
+        vincs[index].x = -SCREEN_MARGIN;
+        vincs[index].y = rand() % SCREEN_HEIGHT;
         break;
     case 1: // right side
-        vincRect[index].x = SCREEN_WIDTH;
-        vincRect[index].y = rand() % SCREEN_HEIGHT;
+        vincs[index].x = SCREEN_WIDTH;
+        vincs[index].y = rand() % SCREEN_HEIGHT;
         break;
     case 2: // top side
-        vincRect[index].x = rand() % SCREEN_WIDTH;
-        vincRect[index].y = -SCREEN_MARGIN;
+        vincs[index].x = rand() % SCREEN_WIDTH;
+        vincs[index].y = -SCREEN_MARGIN;
         break;
     case 3: // bottom side
-        vincRect[index].x = rand() % SCREEN_WIDTH;
-        vincRect[index].y = SCREEN_HEIGHT;
+        vincs[index].x = rand() % SCREEN_WIDTH;
+        vincs[index].y = SCREEN_HEIGHT;
         break;
     }
-    vincRect[index].w = VINC_WIDTH;
-    vincRect[index].h = VINC_HEIGHT;
+    vincs[index].width = VINC_WIDTH;
+    vincs[index].height = VINC_HEIGHT;
 }
 
 // Function to reset Vinc's position and speed
@@ -96,28 +97,30 @@ void resetVinc(int index) {
     int finalSpeedX = directionX * (speedX + speedIncrementX);
     int finalSpeedY = directionY * (speedY + speedIncrementY);
 
-    vincSpeedX[index] = finalSpeedX;
-    vincSpeedY[index] = finalSpeedY;
+    vincs[index].speedX = finalSpeedX;
+    vincs[index].speedY = finalSpeedY;
 
     setVincPosition(index, side);
 }
 
 // Function to reset the game
 void resetGame() {
-    hotboiRect = (SDL_Rect){ (SCREEN_WIDTH - HOTBOI_WIDTH) / 2, (SCREEN_HEIGHT - HOTBOI_HEIGHT) / 2, HOTBOI_WIDTH, HOTBOI_HEIGHT };
+    hotboi = (Character){ (SCREEN_WIDTH - HOTBOI_WIDTH) / 2, (SCREEN_HEIGHT - HOTBOI_HEIGHT) / 2, HOTBOI_WIDTH, HOTBOI_HEIGHT, 0, 0, hotboi.texture };
     score = 0;
     currentVincCount = STARTING_VINC_COUNT;
     for (int i = 0; i < currentVincCount; i++) {
+        vincs[i].texture = vincTexture;
         resetVinc(i);
     }
 }
 
+
 // Function to move Vincs
 void moveVincs() {
     for (int i = 0; i < currentVincCount; i++) {
-        vincRect[i].x += vincSpeedX[i];
-        vincRect[i].y += vincSpeedY[i];
-        if (vincRect[i].x < -vincRect[i].w || vincRect[i].x > SCREEN_WIDTH || vincRect[i].y < -vincRect[i].h || vincRect[i].y > SCREEN_HEIGHT) {
+        vincs[i].x += vincs[i].speedX;
+        vincs[i].y += vincs[i].speedY;
+        if (vincs[i].x < -vincs[i].width || vincs[i].x > SCREEN_WIDTH || vincs[i].y < -vincs[i].height || vincs[i].y > SCREEN_HEIGHT) {
             resetVinc(i);
         }
     }
@@ -139,43 +142,47 @@ SDL_Texture* renderText(const char* message, SDL_Color color, TTF_Font* font) {
     return texture;
 }
 
-void handleKeyboardInput(SDL_Event e, bool* quit, int* hotboiSpeedX, int* hotboiSpeedY, bool* isGameOver, Uint32* startTime) {
+void handleKeyboardInput(SDL_Event e, bool* quit, bool* isGameOver, Uint32* startTime) {
     if (e.type == SDL_QUIT) {
         *quit = 1;
     }
     else if (e.type == SDL_KEYDOWN) {
         switch (e.key.keysym.sym) {
         case SDLK_UP:
-            if (hotboiRect.y > 0) {
-                *hotboiSpeedY = -HOTBOI_SPEED;
-            }
+            hotboi.speedY = -HOTBOI_SPEED;
             break;
         case SDLK_DOWN:
-            if (hotboiRect.y < SCREEN_HEIGHT - hotboiRect.h) {
-                *hotboiSpeedY = HOTBOI_SPEED;
-            }
+            hotboi.speedY = HOTBOI_SPEED;
             break;
         case SDLK_LEFT:
-            if (hotboiRect.x > 0) {
-                *hotboiSpeedX = -HOTBOI_SPEED;
-            }
+            hotboi.speedX = -HOTBOI_SPEED;
             break;
         case SDLK_RIGHT:
-            if (hotboiRect.x < SCREEN_WIDTH - hotboiRect.w) {
-                *hotboiSpeedX = HOTBOI_SPEED;
-            }
+            hotboi.speedX = HOTBOI_SPEED;
             break;
         }
     }
     else if (e.type == SDL_KEYUP) {
         switch (e.key.keysym.sym) {
         case SDLK_UP:
+            if (hotboi.speedY < 0) {
+                hotboi.speedY = 0;
+            }
+            break;
         case SDLK_DOWN:
-            *hotboiSpeedY = 0;
+            if (hotboi.speedY > 0) {
+                hotboi.speedY = 0;
+            }
             break;
         case SDLK_LEFT:
+            if (hotboi.speedX < 0) {
+                hotboi.speedX = 0;
+            }
+            break;
         case SDLK_RIGHT:
-            *hotboiSpeedX = 0;
+            if (hotboi.speedX > 0) {
+                hotboi.speedX = 0;
+            }
             break;
         case SDLK_r:
             if (*isGameOver) {
@@ -189,7 +196,7 @@ void handleKeyboardInput(SDL_Event e, bool* quit, int* hotboiSpeedX, int* hotboi
 }
 
 // Function to update the game state
-void updateGameState(bool* isGameOver, Uint32* startTime, int* lastScoreIncrease, int* hotboiSpeedX, int* hotboiSpeedY) {
+void updateGameState(bool* isGameOver, Uint32* startTime, int* lastScoreIncrease) {
     if (!*isGameOver) {
         score = (SDL_GetTicks() - *startTime) / 1000;
 
@@ -203,27 +210,27 @@ void updateGameState(bool* isGameOver, Uint32* startTime, int* lastScoreIncrease
             }
         }
 
-        hotboiRect.x += *hotboiSpeedX;
-        hotboiRect.y += *hotboiSpeedY;
+        hotboi.x += hotboi.speedX;
+        hotboi.y += hotboi.speedY;
 
-        if (hotboiRect.x < 0) {
-            hotboiRect.x = 0;
+        if (hotboi.x < 0) {
+            hotboi.x = 0;
         }
-        else if (hotboiRect.x > SCREEN_WIDTH - hotboiRect.w) {
-            hotboiRect.x = SCREEN_WIDTH - hotboiRect.w;
+        else if (hotboi.x > SCREEN_WIDTH - hotboi.width) {
+            hotboi.x = SCREEN_WIDTH - hotboi.width;
         }
 
-        if (hotboiRect.y < 0) {
-            hotboiRect.y = 0;
+        if (hotboi.y < 0) {
+            hotboi.y = 0;
         }
-        else if (hotboiRect.y > SCREEN_HEIGHT - hotboiRect.h) {
-            hotboiRect.y = SCREEN_HEIGHT - hotboiRect.h;
+        else if (hotboi.y > SCREEN_HEIGHT - hotboi.height) {
+            hotboi.y = SCREEN_HEIGHT - hotboi.height;
         }
 
         moveVincs();
 
         for (int i = 0; i < currentVincCount; i++) {
-            if (checkCollision(hotboiRect, vincRect[i])) {
+            if (checkCollision(hotboi, vincs[i])) {
                 *isGameOver = true;
                 Mix_PlayChannel(-1, gameOverSound, 0);
                 break;
@@ -253,11 +260,13 @@ void renderGame(bool isGameOver, TTF_Font* font, SDL_Color white, SDL_Rect textR
         }
 
         // Render the hotboi
-        SDL_RenderCopy(renderer, hotboi, NULL, &hotboiRect);
+        SDL_Rect hotboiRect = { hotboi.x, hotboi.y, hotboi.width, hotboi.height };
+        SDL_RenderCopy(renderer, hotboi.texture, NULL, &hotboiRect);
 
         // Render all the vincs
         for (int i = 0; i < currentVincCount; i++) {
-            SDL_RenderCopy(renderer, vincTexture, NULL, &vincRect[i]);
+            SDL_Rect vincRect = { vincs[i].x, vincs[i].y, vincs[i].width, vincs[i].height };
+            SDL_RenderCopy(renderer, vincs[i].texture, NULL, &vincRect);
         }
 
         // Render the score text
@@ -267,8 +276,7 @@ void renderGame(bool isGameOver, TTF_Font* font, SDL_Color white, SDL_Rect textR
         SDL_DestroyTexture(scoreTexture);
 
     }
-    else
-    {
+    else {
         score = 0;
         SDL_RenderCopy(renderer, endScreen, NULL, NULL);
     }
@@ -276,6 +284,7 @@ void renderGame(bool isGameOver, TTF_Font* font, SDL_Color white, SDL_Rect textR
     SDL_RenderPresent(renderer);
     SDL_Delay(20);
 }
+
 
 // Main function
 int main(int argc, char* args[]) {
@@ -294,20 +303,20 @@ int main(int argc, char* args[]) {
         return 1;
     }
 
-    window = SDL_CreateWindow("Ban Bruffen", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    window = SDL_CreateWindow("Ban Bruffen", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     background = loadTexture("Background.bmp");
-    hotboi = loadTexture("HotBoi.bmp");
+    hotboi.texture = loadTexture("HotBoi.bmp");
     vincTexture = loadTexture("vinc.bmp");
     endScreen = loadTexture("EndScreen.bmp");
     gameOverSound = Mix_LoadWAV("wowzer.wav");
-    
+
     int prevScore = -1;
     SDL_Color white = { 255, 255, 255 };
     SDL_Rect textRect = { 20, 20, SCORE_TEXT_WIDTH, SCORE_TEXT_HEIGHT };
 
-    if (!background || !hotboi || !vincTexture || !endScreen) {
+    if (!background || !hotboi.texture || !vincTexture || !endScreen) {
         SDL_Log("Failed to load textures\n");
         return 1;
     }
@@ -315,8 +324,6 @@ int main(int argc, char* args[]) {
     srand(time(NULL));
     resetGame();
 
-    hotboiSpeedX = 0;
-    hotboiSpeedY = 0;
     startTime = SDL_GetTicks();
     score = 0;
     isGameOver = false;
@@ -326,15 +333,15 @@ int main(int argc, char* args[]) {
 
     while (!quit) {
         while (SDL_PollEvent(&e) != 0) {
-            handleKeyboardInput(e, &quit, &hotboiSpeedX, &hotboiSpeedY, &isGameOver, &startTime);
+            handleKeyboardInput(e, &quit, &isGameOver, &startTime);
         }
 
-        updateGameState(&isGameOver, &startTime, &lastScoreIncrease, &hotboiSpeedX, &hotboiSpeedY);
+        updateGameState(&isGameOver, &startTime, &lastScoreIncrease);
         renderGame(isGameOver, font, white, textRect);
     }
 
     SDL_DestroyTexture(background);
-    SDL_DestroyTexture(hotboi);
+    SDL_DestroyTexture(hotboi.texture);
     SDL_DestroyTexture(vincTexture);
     SDL_DestroyTexture(endScreen);
     SDL_DestroyRenderer(renderer);
@@ -347,3 +354,4 @@ int main(int argc, char* args[]) {
 
     return 0;
 }
+
