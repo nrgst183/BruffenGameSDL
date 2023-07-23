@@ -18,31 +18,36 @@ int SCREEN_HEIGHT = 1080;
 #define HOTBOI_HEIGHT 112
 #define VINC_WIDTH 157
 #define VINC_HEIGHT 149
+#define VINC_MAX_SPEED 1000
+#define VINC_MIN_SPEED 200
 #define MAX_VINC_COUNT 100
 #define STARTING_VINC_COUNT 3
-#define ADD_VINCS_SECONDS_AMOUNT 15
+#define ADD_VINCS_SECONDS_AMOUNT 10
 #define MAX_VINC_SECONDS_AMOUNT 380
-#define VINC_SPEED 250
-#define SCORE_SPEED_FACTOR 100
-#define VINC_MAX_SPEED 1000
-#define VINC_MIN_SPEED 300
+#define SCORE_SPEED_FACTOR 10
 #define SCREEN_MARGIN 150
 #define SCORE_X 10
 #define SCORE_Y 10
-#define SCORE_TEXT_WIDTH 125
-#define SCORE_TEXT_HEIGHT 50
+#define SCORE_TEXT_WIDTH 150
+#define SCORE_TEXT_HEIGHT 60
 #define FONT_SIZE 128
-#define SCORE_INCREMENT 10
 
 typedef struct {
-    int x;
-    int y;
+    float x;
+    float y;
     int width;
     int height;
-    int speedX;
-    int speedY;
+    float speedX;
+    float speedY;
     SDL_Texture* texture;
 } Character;
+
+enum GameState { RUNNING, PAUSED, SETTINGS, GAMEOVER };
+enum GameState currentState;
+enum Difficulty { EASY, MEDIUM, HARD };
+enum Difficulty currentDifficulty;
+bool vsyncOn;
+
 
 SDL_Window* window;
 SDL_Renderer* renderer;
@@ -55,7 +60,6 @@ Character hotboi;
 Character vincs[MAX_VINC_COUNT];
 int currentVincCount;
 int score;
-bool isGameOver;
 Uint32 startTime;
 Uint32 lastScoreIncrease;
 Uint32 lastVincAdditionTime;

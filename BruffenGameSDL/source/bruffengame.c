@@ -79,8 +79,8 @@ void resetVinc(int index) {
     float speedIncrement = ((float)score / SCORE_SPEED_FACTOR);
     //speedIncrement = speedIncrement > 1.0 ? 1.0 : speedIncrement;
 
-    int speedX = (rand() % VINC_SPEED + 1);
-    int speedY = (rand() % VINC_SPEED + 1);
+    int speedX = (rand() % VINC_MIN_SPEED + 1);
+    int speedY = (rand() % VINC_MIN_SPEED + 1);
 
     int directionX = 0, directionY = 0;
     int side = rand() % 4;
@@ -127,7 +127,7 @@ void moveVincs() {
 
 // Function to render text
 SDL_Texture* renderText(const char* message, SDL_Color color, TTF_Font* font) {
-    SDL_Surface* surface = TTF_RenderText_Solid(font, message, color);
+    SDL_Surface* surface = TTF_RenderText_Blended(font, message, color);
     if (!surface) {
         SDL_Log("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
         return NULL;
@@ -141,7 +141,7 @@ SDL_Texture* renderText(const char* message, SDL_Color color, TTF_Font* font) {
     return texture;
 }
 
-void handleKeyboardInput(SDL_Event e, bool* quit, bool* isGameOver, Uint32* startTime) {
+void handleKeyboardInput(SDL_Event e, bool* quit, Uint32* startTime) {
     if (e.type == SDL_QUIT) {
         *quit = 1;
     }
@@ -159,13 +159,21 @@ void handleKeyboardInput(SDL_Event e, bool* quit, bool* isGameOver, Uint32* star
         case SDLK_RIGHT:
             hotboi.speedX = HOTBOI_SPEED;
             break;
+        case SDLK_ESCAPE:
+            if (currentState == RUNNING) {
+                currentState = PAUSED;
+            }
+            else if (currentState == PAUSED) {
+                currentState = RUNNING;
+            }
+            break;
         case SDLK_i:
-            if (*isGameOver || isInvulnerable) {
+            if (currentState == GAMEOVER || isInvulnerable) {
                 isInvulnerable = !isInvulnerable;
             }
             break;
         case SDLK_s:
-            if (*isGameOver || isScreensaverMode) {
+            if (currentState == GAMEOVER || isScreensaverMode) {
                 isScreensaverMode = !isScreensaverMode;
             }
             break;
@@ -194,11 +202,11 @@ void handleKeyboardInput(SDL_Event e, bool* quit, bool* isGameOver, Uint32* star
                 hotboi.speedX = 0;
             }
             break;
-        case SDLK_r:
-            if (*isGameOver) {
+        case SDLK_ESCAPE:
+            if (currentState == GAMEOVER) {
                 resetGame();
                 *startTime = SDL_GetTicks();
-                *isGameOver = false;
+                currentState = RUNNING;
             }
             break;
         }
@@ -206,8 +214,8 @@ void handleKeyboardInput(SDL_Event e, bool* quit, bool* isGameOver, Uint32* star
 }
 
 // Function to update the game state
-void updateGameState(bool* isGameOver, Uint32* startTime, int* lastScoreIncrease) {
-    if (!*isGameOver) {
+void updateGameState(Uint32* startTime, int* lastScoreIncrease) {
+    if (currentState == RUNNING) {
         score = (SDL_GetTicks() - *startTime) / 1000;
 
         if (score != *lastScoreIncrease) {
@@ -241,7 +249,7 @@ void updateGameState(bool* isGameOver, Uint32* startTime, int* lastScoreIncrease
 
         for (int i = 0; i < currentVincCount; i++) {
             if (!isInvulnerable && !isScreensaverMode && checkCollision(hotboi, vincs[i])) {
-                *isGameOver = true;
+                currentState = GAMEOVER;
                 Mix_PlayChannel(-1, gameOverSound, 0);
                 break;
             }
@@ -250,11 +258,12 @@ void updateGameState(bool* isGameOver, Uint32* startTime, int* lastScoreIncrease
 }
 
 // Function to render the game
-void renderGame(bool isGameOver, TTF_Font* font, SDL_Color white, SDL_Rect textRect) {
+void renderGame(TTF_Font* font, SDL_Color white, SDL_Rect textRect) {
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, background, NULL, NULL);
 
-    if (!isGameOver) {
+    if (currentState == RUNNING) 
+    {
         score = (SDL_GetTicks() - startTime) / 1000;
         char scoreStr[50];
         if (font == NULL) {
@@ -277,7 +286,7 @@ void renderGame(bool isGameOver, TTF_Font* font, SDL_Color white, SDL_Rect textR
 
         // Render all the vincs
         for (int i = 0; i < currentVincCount; i++) {
-            SDL_Rect vincRect = { vincs[i].x, vincs[i].y, vincs[i].width, vincs[i].height };
+            SDL_Rect vincRect = { (int)vincs[i].x, (int)vincs[i].y, vincs[i].width, vincs[i].height };
             SDL_RenderCopy(renderer, vincs[i].texture, NULL, &vincRect);
         }
 
@@ -288,15 +297,42 @@ void renderGame(bool isGameOver, TTF_Font* font, SDL_Color white, SDL_Rect textR
         SDL_DestroyTexture(scoreTexture);
 
     }
-    else {
+    else if (currentState == PAUSED)
+    {
+        SDL_Texture* pauseText = renderText("PAUSE", white, font);
+        SDL_Rect textRect = { 20, 20, SCORE_TEXT_WIDTH, SCORE_TEXT_HEIGHT };
+        SDL_RenderCopy(renderer, pauseText, NULL, &textRect);
+        SDL_DestroyTexture(pauseText);
+    }
+    else if (currentState == GAMEOVER) 
+    {
         score = 0;
-        SDL_RenderCopy(renderer, endScreen, NULL, NULL);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+
+        SDL_Rect endScreenRect;
+        int endScreenWidth, endScreenHeight;
+        SDL_QueryTexture(endScreen, NULL, NULL, &endScreenWidth, &endScreenHeight);
+
+        // Calculate the scale factor
+        float scaleW = (float)SCREEN_WIDTH / endScreenWidth;
+        float scaleH = (float)SCREEN_HEIGHT / endScreenHeight;
+        float scale = (scaleW < scaleH) ? scaleW : scaleH; // Take the smaller scale factor
+
+        // Scale the dimensions
+        endScreenRect.w = (int)(endScreenWidth * scale);
+        endScreenRect.h = (int)(endScreenHeight * scale);
+
+        // Center the image
+        endScreenRect.x = (SCREEN_WIDTH - endScreenRect.w) / 2;
+        endScreenRect.y = (SCREEN_HEIGHT - endScreenRect.h) / 2;
+
+        SDL_RenderCopy(renderer, endScreen, NULL, &endScreenRect);
     }
 
     SDL_RenderPresent(renderer);
-    SDL_Delay(20);
+    SDL_Delay(1);
 }
-
 
 // Main function
 int main(int argc, char* args[]) {
@@ -326,7 +362,7 @@ int main(int argc, char* args[]) {
 
     int prevScore = -1;
     SDL_Color white = { 255, 255, 255 };
-    SDL_Rect textRect = { 20, 20, SCORE_TEXT_WIDTH, SCORE_TEXT_HEIGHT };
+    SDL_Rect textRect = { 40, 40, SCORE_TEXT_WIDTH, SCORE_TEXT_HEIGHT };
 
     if (!background || !hotboi.texture || !vincTexture || !endScreen) {
         SDL_Log("Failed to load textures\n");
@@ -338,13 +374,14 @@ int main(int argc, char* args[]) {
 
     startTime = SDL_GetTicks();
     score = 0;
-    isGameOver = false;
+    currentState = RUNNING;
 
     SDL_Event e;
     bool quit = false;
 
     // Main game loop
     while (!quit) {
+
         Uint32 frameStart = SDL_GetTicks();
 
         // Resize the window
@@ -354,11 +391,11 @@ int main(int argc, char* args[]) {
         SCREEN_HEIGHT = h;
 
         while (SDL_PollEvent(&e) != 0) {
-            handleKeyboardInput(e, &quit, &isGameOver, &startTime);
+            handleKeyboardInput(e, &quit, &startTime);
         }
 
-        updateGameState(&isGameOver, &startTime, &lastScoreIncrease);
-        renderGame(isGameOver, font, white, textRect);
+        updateGameState(&startTime, &lastScoreIncrease);
+        renderGame(font, white, textRect);
 
         Uint32 frameEnd = SDL_GetTicks();
         deltaTime = (frameEnd - frameStart) / 1000.0f; // duration of the last frame in seconds
