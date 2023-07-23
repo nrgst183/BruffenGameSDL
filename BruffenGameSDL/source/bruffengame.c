@@ -269,19 +269,12 @@ void renderGame(bool isGameOver, TTF_Font* font, SDL_Color white, SDL_Rect textR
     }
     else
     {
+        score = 0;
         SDL_RenderCopy(renderer, endScreen, NULL, NULL);
     }
 
     SDL_RenderPresent(renderer);
     SDL_Delay(20);
-}
-
-// Function to calculate delta time
-float calculateDeltaTime(Uint32* lastFrameTime) {
-    Uint32 currentFrameTime = SDL_GetTicks();
-    float deltaTime = (currentFrameTime - *lastFrameTime) / 1000.0f; // divide by 1000 to convert milliseconds to seconds
-    *lastFrameTime = currentFrameTime;
-    return deltaTime;
 }
 
 // Main function
@@ -308,12 +301,11 @@ int main(int argc, char* args[]) {
     hotboi = loadTexture("HotBoi.bmp");
     vincTexture = loadTexture("vinc.bmp");
     endScreen = loadTexture("EndScreen.bmp");
-    Mix_Chunk* gameOverSound = Mix_LoadWAV("wowzer.wav");
-
+    gameOverSound = Mix_LoadWAV("wowzer.wav");
+    
     int prevScore = -1;
     SDL_Color white = { 255, 255, 255 };
     SDL_Rect textRect = { 20, 20, SCORE_TEXT_WIDTH, SCORE_TEXT_HEIGHT };
-    int lastScoreIncrease = 0;
 
     if (!background || !hotboi || !vincTexture || !endScreen) {
         SDL_Log("Failed to load textures\n");
@@ -323,12 +315,11 @@ int main(int argc, char* args[]) {
     srand(time(NULL));
     resetGame();
 
-    int hotboiSpeedX = 0;
-    int hotboiSpeedY = 0;
-
-    Uint32 startTime = SDL_GetTicks();
+    hotboiSpeedX = 0;
+    hotboiSpeedY = 0;
+    startTime = SDL_GetTicks();
     score = 0;
-    bool isGameOver = false;
+    isGameOver = false;
 
     SDL_Event e;
     bool quit = false;
