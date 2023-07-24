@@ -10,8 +10,8 @@
 #include <time.h>
 #include <stdbool.h>
 
-int SCREEN_WIDTH = 1920;
-int SCREEN_HEIGHT = 1080;
+#define SCREEN_WIDTH 1920
+#define SCREEN_HEIGHT 1080
 
 #define HOTBOI_SPEED 500
 #define HOTBOI_WIDTH 112

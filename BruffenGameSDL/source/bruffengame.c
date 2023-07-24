@@ -1,5 +1,21 @@
 #include "bruffengame.h"
 
+// Function to calculate the distance between two points
+int calculateDistance(int x1, int y1, int x2, int y2) {
+    return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+}
+
+// Function to check if two characters collide
+int checkCollision(Character a, Character b) {
+    return !(a.x + a.width <= b.x || a.x >= b.x + b.width || a.y + a.height <= b.y || a.y >= b.y + b.height);
+}
+
+int clamp(int val, int min, int max) {
+    if (val < min) return min;
+    if (val > max) return max;
+    return val;
+}
+
 // Function to load a texture from a given path
 SDL_Texture* loadTexture(const char* path) {
     SDL_Surface* tempSurface = SDL_LoadBMP(path);
@@ -17,62 +33,38 @@ SDL_Texture* loadTexture(const char* path) {
     return texture;
 }
 
-// Function to calculate the distance between two points
-int calculateDistance(int x1, int y1, int x2, int y2) {
-    return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-}
-
-// Function to check if two rectangles collide
-int checkCollision(Character a, Character b) {
-    return !(a.x + a.width <= b.x || a.x >= b.x + b.width || a.y + a.height <= b.y || a.y >= b.y + b.height);
-}
-
 // Function to set the direction based on the side
 void setVincDirection(int* directionX, int* directionY, int side, int diagonalChance) {
-    switch (side) {
-    case 0: // left side
-        *directionX = 1;
-        *directionY = diagonalChance == 0 ? (rand() % 2 == 0 ? -1 : 1) : 0;
-        break;
-    case 1: // right side
-        *directionX = -1;
-        *directionY = diagonalChance == 0 ? (rand() % 2 == 0 ? -1 : 1) : 0;
-        break;
-    case 2: // top side
-        *directionY = 1;
-        *directionX = diagonalChance == 0 ? (rand() % 2 == 0 ? -1 : 1) : 0;
-        break;
-    case 3: // bottom side
-        *directionY = -1;
-        *directionX = diagonalChance == 0 ? (rand() % 2 == 0 ? -1 : 1) : 0;
-        break;
+    *directionX = 0;
+    *directionY = 0;
+
+    if (side % 2 == 0) // left or right
+        *directionX = (side == 0) ? 1 : -1;
+    else // top or bottom
+        *directionY = (side == 2) ? 1 : -1;
+
+    if (diagonalChance == 0) {
+        if (side % 2 == 0) // left or right
+            *directionY = (rand() % 2 == 0 ? -1 : 1);
+        else // top or bottom
+            *directionX = (rand() % 2 == 0 ? -1 : 1);
     }
 }
 
 // Function to set the position of Vinc
 void setVincPosition(int index, int side) {
-    // Change vincRect[index] to vincs[index]
-    switch (side) {
-    case 0: // left side
-        vincs[index].x = -SCREEN_MARGIN;
-        vincs[index].y = rand() % SCREEN_HEIGHT;
-        break;
-    case 1: // right side
-        vincs[index].x = SCREEN_WIDTH;
-        vincs[index].y = rand() % SCREEN_HEIGHT;
-        break;
-    case 2: // top side
-        vincs[index].x = rand() % SCREEN_WIDTH;
-        vincs[index].y = -SCREEN_MARGIN;
-        break;
-    case 3: // bottom side
-        vincs[index].x = rand() % SCREEN_WIDTH;
-        vincs[index].y = SCREEN_HEIGHT;
-        break;
-    }
+    vincs[index].x = (side % 2 == 0) ? // left or right
+        (side == 0 ? -SCREEN_MARGIN : SCREEN_WIDTH) :
+        rand() % SCREEN_WIDTH;
+
+    vincs[index].y = (side % 2 == 0) ? // left or right
+        rand() % SCREEN_HEIGHT :
+        (side == 2 ? -SCREEN_MARGIN : SCREEN_HEIGHT);
+
     vincs[index].width = VINC_WIDTH;
     vincs[index].height = VINC_HEIGHT;
 }
+
 
 // Function to reset Vinc's position and speed
 void resetVinc(int index) {
@@ -231,19 +223,8 @@ void updateGameState(Uint32* startTime, int* lastScoreIncrease) {
         hotboi.x += hotboi.speedX * deltaTime;
         hotboi.y += hotboi.speedY * deltaTime;
 
-        if (hotboi.x < 0) {
-            hotboi.x = 0;
-        }
-        else if (hotboi.x > SCREEN_WIDTH - hotboi.width) {
-            hotboi.x = SCREEN_WIDTH - hotboi.width;
-        }
-
-        if (hotboi.y < 0) {
-            hotboi.y = 0;
-        }
-        else if (hotboi.y > SCREEN_HEIGHT - hotboi.height) {
-            hotboi.y = SCREEN_HEIGHT - hotboi.height;
-        }
+        hotboi.x = clamp(hotboi.x, 0, SCREEN_WIDTH - hotboi.width);
+        hotboi.y = clamp(hotboi.y, 0, SCREEN_HEIGHT - hotboi.height);
 
         moveVincs();
 
