@@ -353,6 +353,7 @@ int main(int argc, char* args[]) {
 
     window = SDL_CreateWindow("Ban Bruffen", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     background = loadTexture("Background.bmp");
     hotboi.texture = loadTexture("HotBoi.bmp");
@@ -383,12 +384,6 @@ int main(int argc, char* args[]) {
     while (!quit) {
 
         Uint32 frameStart = SDL_GetTicks();
-
-        // Resize the window
-        int w, h;
-        SDL_GetWindowSize(window, &w, &h);
-        SCREEN_WIDTH = w;
-        SCREEN_HEIGHT = h;
 
         while (SDL_PollEvent(&e) != 0) {
             handleKeyboardInput(e, &quit, &startTime);
