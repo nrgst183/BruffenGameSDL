@@ -34,18 +34,6 @@ SDL_Texture* loadTexture(const char* path) {
     return createTextureFromSurface(tempSurface);
 }
 
-void toggleStateInGameOver(bool* state) {
-    if (currentState == GAMEOVER) {
-        *state = !(*state);
-    }
-}
-
-void stopMovement(int* speed, int direction) {
-    if (*speed == direction * HOTBOI_SPEED) {
-        *speed = 0;
-    }
-}
-
 // Function to set the direction based on the side
 void setVincDirection(int* directionX, int* directionY, int side, int diagonalChance) {
     *directionX = 0;
@@ -161,28 +149,6 @@ void handleKeyboardInput(SDL_Event e, bool* quit, Uint32* startTime) {
         case SDLK_RIGHT:
             hotboi.speedX = HOTBOI_SPEED;
             break;
-        case SDLK_i:
-            toggleStateInGameOver(&isInvulnerable);
-            break;
-        case SDLK_s:
-            toggleStateInGameOver(&isScreensaverMode);
-            break;
-        }
-    }
-    else if (e.type == SDL_KEYUP) {
-        switch (e.key.keysym.sym) {
-        case SDLK_UP:
-            stopMovement(&hotboi.speedY, -1);
-            break;
-        case SDLK_DOWN:
-            stopMovement(&hotboi.speedY, 1);
-            break;
-        case SDLK_LEFT:
-            stopMovement(&hotboi.speedX, -1);
-            break;
-        case SDLK_RIGHT:
-            stopMovement(&hotboi.speedX, 1);
-            break;
         case SDLK_ESCAPE:
             if (currentState == RUNNING) {
                 currentState = PAUSED;
@@ -190,7 +156,44 @@ void handleKeyboardInput(SDL_Event e, bool* quit, Uint32* startTime) {
             else if (currentState == PAUSED) {
                 currentState = RUNNING;
             }
-            else if (currentState == GAMEOVER) {
+            break;
+        case SDLK_i:
+            if (currentState == GAMEOVER || isInvulnerable) {
+                isInvulnerable = !isInvulnerable;
+            }
+            break;
+        case SDLK_s:
+            if (currentState == GAMEOVER || isScreensaverMode) {
+                isScreensaverMode = !isScreensaverMode;
+            }
+            break;
+        }
+
+    }
+    else if (e.type == SDL_KEYUP) {
+        switch (e.key.keysym.sym) {
+        case SDLK_UP:
+            if (hotboi.speedY < 0) {
+                hotboi.speedY = 0;
+            }
+            break;
+        case SDLK_DOWN:
+            if (hotboi.speedY > 0) {
+                hotboi.speedY = 0;
+            }
+            break;
+        case SDLK_LEFT:
+            if (hotboi.speedX < 0) {
+                hotboi.speedX = 0;
+            }
+            break;
+        case SDLK_RIGHT:
+            if (hotboi.speedX > 0) {
+                hotboi.speedX = 0;
+            }
+            break;
+        case SDLK_ESCAPE:
+            if (currentState == GAMEOVER) {
                 resetGame();
                 *startTime = SDL_GetTicks();
                 currentState = RUNNING;
