@@ -31,6 +31,8 @@
 #define SCORE_TEXT_WIDTH 150
 #define SCORE_TEXT_HEIGHT 60
 #define FONT_SIZE 128
+#define NUM_SIDES 4
+#define DIAGONAL_CHANCE_FACTOR 5
 
 typedef struct {
     float x;

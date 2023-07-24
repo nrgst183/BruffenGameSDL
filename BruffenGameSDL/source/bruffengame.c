@@ -16,21 +16,34 @@ int clamp(int val, int min, int max) {
     return val;
 }
 
-// Function to load a texture from a given path
+SDL_Texture* createTextureFromSurface(SDL_Surface* surface) {
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+    if (!texture) {
+        SDL_Log("Unable to create texture from surface! SDL Error: %s\n", SDL_GetError());
+    }
+    return texture;
+}
+
 SDL_Texture* loadTexture(const char* path) {
     SDL_Surface* tempSurface = SDL_LoadBMP(path);
     if (!tempSurface) {
         SDL_Log("Unable to load image %s! SDL Error: %s\n", path, SDL_GetError());
         return NULL;
     }
+    return createTextureFromSurface(tempSurface);
+}
 
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, tempSurface);
-    SDL_FreeSurface(tempSurface);
-    if (!texture) {
-        SDL_Log("Unable to create texture from %s! SDL Error: %s\n", path, SDL_GetError());
+void toggleStateInGameOver(bool* state) {
+    if (currentState == GAMEOVER) {
+        *state = !(*state);
     }
+}
 
-    return texture;
+void stopMovement(int* speed, int direction) {
+    if (*speed == direction * HOTBOI_SPEED) {
+        *speed = 0;
+    }
 }
 
 // Function to set the direction based on the side
@@ -68,23 +81,20 @@ void setVincPosition(int index, int side) {
 
 // Function to reset Vinc's position and speed
 void resetVinc(int index) {
-    float speedIncrement = ((float)score / SCORE_SPEED_FACTOR);
-    //speedIncrement = speedIncrement > 1.0 ? 1.0 : speedIncrement;
 
-    int speedX = (rand() % VINC_MIN_SPEED + 1);
-    int speedY = (rand() % VINC_MIN_SPEED + 1);
+    float speedIncrement = ((float)score / SCORE_SPEED_FACTOR);
+
+    int speedX = max(rand() % VINC_MIN_SPEED + 1, VINC_MIN_SPEED);
+    int speedY = max(rand() % VINC_MIN_SPEED + 1, VINC_MIN_SPEED);
 
     int directionX = 0, directionY = 0;
-    int side = rand() % 4;
-    int diagonalChance = rand() % 5;
+    int side = rand() % NUM_SIDES;
+    int diagonalChance = rand() % DIAGONAL_CHANCE_FACTOR;
 
     setVincDirection(&directionX, &directionY, side, diagonalChance);
 
     int speedIncrementX = (int)(speedX * speedIncrement);
     int speedIncrementY = (int)(speedY * speedIncrement);
-
-    speedIncrementX = speedIncrementX < VINC_MIN_SPEED ? VINC_MIN_SPEED : speedIncrementX;
-    speedIncrementY = speedIncrementY < VINC_MIN_SPEED ? VINC_MIN_SPEED : speedIncrementY;
 
     int finalSpeedX = directionX * (speedX + speedIncrementX);
     int finalSpeedY = directionY * (speedY + speedIncrementY);
@@ -151,6 +161,28 @@ void handleKeyboardInput(SDL_Event e, bool* quit, Uint32* startTime) {
         case SDLK_RIGHT:
             hotboi.speedX = HOTBOI_SPEED;
             break;
+        case SDLK_i:
+            toggleStateInGameOver(&isInvulnerable);
+            break;
+        case SDLK_s:
+            toggleStateInGameOver(&isScreensaverMode);
+            break;
+        }
+    }
+    else if (e.type == SDL_KEYUP) {
+        switch (e.key.keysym.sym) {
+        case SDLK_UP:
+            stopMovement(&hotboi.speedY, -1);
+            break;
+        case SDLK_DOWN:
+            stopMovement(&hotboi.speedY, 1);
+            break;
+        case SDLK_LEFT:
+            stopMovement(&hotboi.speedX, -1);
+            break;
+        case SDLK_RIGHT:
+            stopMovement(&hotboi.speedX, 1);
+            break;
         case SDLK_ESCAPE:
             if (currentState == RUNNING) {
                 currentState = PAUSED;
@@ -158,44 +190,7 @@ void handleKeyboardInput(SDL_Event e, bool* quit, Uint32* startTime) {
             else if (currentState == PAUSED) {
                 currentState = RUNNING;
             }
-            break;
-        case SDLK_i:
-            if (currentState == GAMEOVER || isInvulnerable) {
-                isInvulnerable = !isInvulnerable;
-            }
-            break;
-        case SDLK_s:
-            if (currentState == GAMEOVER || isScreensaverMode) {
-                isScreensaverMode = !isScreensaverMode;
-            }
-            break;
-        }
-
-    }
-    else if (e.type == SDL_KEYUP) {
-        switch (e.key.keysym.sym) {
-        case SDLK_UP:
-            if (hotboi.speedY < 0) {
-                hotboi.speedY = 0;
-            }
-            break;
-        case SDLK_DOWN:
-            if (hotboi.speedY > 0) {
-                hotboi.speedY = 0;
-            }
-            break;
-        case SDLK_LEFT:
-            if (hotboi.speedX < 0) {
-                hotboi.speedX = 0;
-            }
-            break;
-        case SDLK_RIGHT:
-            if (hotboi.speedX > 0) {
-                hotboi.speedX = 0;
-            }
-            break;
-        case SDLK_ESCAPE:
-            if (currentState == GAMEOVER) {
+            else if (currentState == GAMEOVER) {
                 resetGame();
                 *startTime = SDL_GetTicks();
                 currentState = RUNNING;
